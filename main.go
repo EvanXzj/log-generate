@@ -3,9 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/rand"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // user-agent list
@@ -36,16 +39,22 @@ func main() {
 	fmt.Println(*totalNum, *logFilePath)
 
 	res := genResourceList()
-	list := genURL(res)
+	uList := genURL(res)
+
+	uLength := len(uList)
+	uaLength := len(uaList)
 
 	var logStr string
 	// generate log
 	for i := 0; i < *totalNum; i++ {
-		index := randomNumber()
-		logStr += genLog(list[index], list[index], "asdfa") + "\n"
+		u := uList[randomInt(0, uLength)]
+		refer := uList[randomInt(0, uLength)]
+		ua := uaList[randomInt(0, uaLength)]
+
+		logStr = logStr + genLog(u, refer, ua) + "\n"
 	}
 
-	file, err := os.OpenFile(*logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(*logFilePath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 
 	if err != nil {
 		fmt.Printf("Open File: filePath=%s Error=%s\n", *logFilePath, err.Error())
@@ -55,14 +64,17 @@ func main() {
 	file.Write([]byte(logStr))
 	defer file.Close()
 
-	fmt.Printf("URL list length=%d\n", len(list))
-	fmt.Println(list[0])
-	fmt.Println("Done")
+	fmt.Println("Done", time.Now())
 }
 
-func randomNumber() int {
+func randomInt(min, max int) int {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	return 0
+	if min > max {
+		return max
+	}
+
+	return r.Intn(max-min) + min
 }
 
 func genResourceList() []resource {
@@ -114,7 +126,24 @@ func genURL(res []resource) []string {
 	return list
 }
 
-func genLog(url, refer, ua string) string {
+func genLog(currentURL, refer, ua string) string {
+	u := url.Values{}
 
-	return "success"
+	timeStr := time.Now().UTC().Format("2006-01-02 15:04:05")
+	// timeStr := time.Now().UTC().String()
+
+	u.Set("time", timeStr)
+	u.Set("url", currentURL)
+	u.Set("refer", refer)
+	u.Set("ua", ua)
+
+	paramsStr := u.Encode()
+
+	logTemplate := "127.0.0.1 - - [${timeStr}] \"OPTIONS /dig?${paramsStr} HTTP/1.1\" 200 43 \"-\" \"${ua}\" \"-\""
+
+	log := strings.Replace(logTemplate, "${paramsStr}", paramsStr, -1)
+	log = strings.Replace(log, "${timeStr}", timeStr, -1)
+	log = strings.Replace(log, "${ua}", ua, -1)
+
+	return log
 }
