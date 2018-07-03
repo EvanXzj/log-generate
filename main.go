@@ -32,19 +32,19 @@ type resource struct {
 }
 
 func main() {
+	// parse command-line params
 	totalNum := flag.Int("totalNum", 10, "total number of log rows need to generate")
 	logFilePath := flag.String("logFilePath", "/tmp/logs/runtime.log", "log file path")
 	flag.Parse()
 
-	fmt.Println(*totalNum, *logFilePath)
-
+	// get resource
 	res := genResourceList()
+	// build url
 	uList := genURL(res)
 
+	logStr := ""
 	uLength := len(uList)
 	uaLength := len(uaList)
-
-	var logStr string
 	// generate log
 	for i := 0; i < *totalNum; i++ {
 		u := uList[randomInt(0, uLength)]
@@ -54,19 +54,22 @@ func main() {
 		logStr = logStr + genLog(u, refer, ua) + "\n"
 	}
 
+	// write log to file
 	file, err := os.OpenFile(*logFilePath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
-
 	if err != nil {
 		fmt.Printf("Open File: filePath=%s Error=%s\n", *logFilePath, err.Error())
 
 		return
 	}
+
 	file.Write([]byte(logStr))
 	defer file.Close()
 
-	fmt.Println("Done", time.Now())
+	// prompt hint
+	fmt.Println("Done", time.Now().Format("2006-01-02 15:04:05"))
 }
 
+// get ran random int number
 func randomInt(min, max int) int {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -127,16 +130,15 @@ func genURL(res []resource) []string {
 }
 
 func genLog(currentURL, refer, ua string) string {
-	u := url.Values{}
-
-	timeStr := time.Now().UTC().Format("2006-01-02 15:04:05")
+	timeStr := time.Now().Format("2006-01-02 15:04:05")
 	// timeStr := time.Now().UTC().String()
+
+	u := url.Values{}
 
 	u.Set("time", timeStr)
 	u.Set("url", currentURL)
 	u.Set("refer", refer)
 	u.Set("ua", ua)
-
 	paramsStr := u.Encode()
 
 	logTemplate := "127.0.0.1 - - [${timeStr}] \"OPTIONS /dig?${paramsStr} HTTP/1.1\" 200 43 \"-\" \"${ua}\" \"-\""
