@@ -33,8 +33,8 @@ type resource struct {
 
 func main() {
 	// parse command-line params
-	totalNum := flag.Int("totalNum", 10, "total number of log rows need to generate")
-	logFilePath := flag.String("logFilePath", "/tmp/logs/runtime.log", "log file path")
+	totalNum := flag.Int("totalNum", 100, "total number of log rows need to generate")
+	logFilePath := flag.String("logFilePath", "/tmp/logs/dig.log", "log file path")
 	flag.Parse()
 
 	// get resource
